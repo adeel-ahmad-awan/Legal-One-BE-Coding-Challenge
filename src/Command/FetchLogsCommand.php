@@ -3,18 +3,17 @@
 namespace App\Command;
 
 use App\Entity\Log;
+use App\Service\LogsService;
 use DateTime;
-use Doctrine\Migrations\Configuration\Exception\FileNotFound;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Psr\Log\LoggerInterface;
 use SplFileObject;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:fetch-logs',
@@ -23,19 +22,26 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class FetchLogsCommand extends Command
 {
     private EntityManagerInterface $entityManager;
-    private $logger;
+    private LoggerInterface $logger;
+    private LogsService $logsService;
 
-    public function __construct(EntityManagerInterface $entityManager, LoggerInterface $logger)
+    const FILE_PATH = 'filePath';
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        LoggerInterface $logger,
+        LogsService $logsService
+    )
     {
         $this->entityManager = $entityManager;
         $this->logger = $logger;
+        $this->logsService = $logsService;
         parent::__construct();
     }
 
     protected function configure(): void
     {
         $this
-            ->addArgument('filePath', InputArgument::REQUIRED, 'File path to logs file')
+            ->addArgument(self::FILE_PATH, InputArgument::REQUIRED, 'File path to logs file')
         ;
     }
 
@@ -44,31 +50,17 @@ class FetchLogsCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $filePath = $input->getArgument('filePath');
         try {
-            $file = new SplFileObject($filePath);
-            while(!$file->eof())
-            {
-                for ($i = 0; $i < 10; $i++) {
-                    $singleLog = $file->fgets();
-                    $arr = explode(" ", $singleLog);
-                    $tempLog = new Log();
-                    $tempLog->setServiceName($arr[0]);
-                    $tempDate = new DateTime(trim($arr[3] . ' ' . $arr[4], '[]'));
-                    $tempLog->setLogDate($tempDate);
-                    $tempLog->setHttpMethod(trim($arr[5], '"'));
-                    $tempLog->setEndPoint($arr[6]);
-                    $tempLog->setHttpProtocol(trim($arr[7], '"'));
-                    $tempLog->setStatusCode(trim($arr[8], '\n'));
-                    $this->entityManager->persist($tempLog);
-                }
-                $this->entityManager->flush();
-            }
-
-        } catch (\Exception $exception) {
+            $filePath = $input->getArgument(self::FILE_PATH);
+            $logsCount = $this->logsService->getNumberOfLogsInDatabase();
+            $file = $this->logsService->openLogFile($filePath, $logsCount);
+            $this->logsService->saveLogsFromFile($file);
+        } catch (Exception $exception) {
             $this->logger->error($exception->getMessage());
-            throw $exception;
+            dump('failed to execute app:fetch-logs. Please check logs for details');
+            return Command::FAILURE;
         }
+        dump('All logs saved successfully');
         return Command::SUCCESS;
     }
 }

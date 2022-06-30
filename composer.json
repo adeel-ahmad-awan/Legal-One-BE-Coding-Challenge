@@ -79,6 +79,6 @@
         "symfony/browser-kit": "6.1.*",
         "symfony/css-selector": "6.1.*",
         "symfony/phpunit-bridge": "^6.1",
-      "ext-http": "*"
+        "ext-http": "*"
     }
 }
