@@ -4,20 +4,24 @@ namespace App\Tests;
 
 use App\Entity\Log;
 use App\Service\LogsService;
+use DateInterval;
+use DatePeriod;
 use DateTime;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManager;
 use SplFileObject;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class logsServiceTest extends KernelTestCase
+/**
+ * @class LogsServiceTest
+ */
+class LogsServiceTest extends KernelTestCase
 {
-    /**
-     * @var EntityManager
-     */
-    private $entityManager;
+    /** @var EntityManager $entityManager */
+    private EntityManager $entityManager;
 
-    private $logsService;
+    /** @var LogsService $logsService */
+    private LogsService $logsService;
 
     /**
      * @throws \Exception
@@ -90,7 +94,7 @@ class logsServiceTest extends KernelTestCase
     }
 
     /** @test */
-    public function testToCountNumberOfRecordForUserServiceWithDate()
+    public function testToCountNumberOfRecordForUserService()
     {
         $filePath = 'tests/logs.txt';
         $file = $this->logsService->openLogFile($filePath);
@@ -106,5 +110,75 @@ class logsServiceTest extends KernelTestCase
             ->getSingleScalarResult();
         // testing
         $this->assertEquals(896,$logsCount);
+    }
+
+    /** @test
+     * @throws \Doctrine\ORM\Exception\ORMException
+     */
+    public function testToCountNumberOfRecordForInvoiceServiceWithDateRange()
+    {
+        $startDate = new DateTime('2010-10-01');
+        $endDate = new DateTime('2010-11-21');
+        $dateInterval = new DateInterval('P1D');
+
+        $period = new DatePeriod($startDate, $dateInterval, $endDate);
+        $dateRange = [];
+        foreach ($period as $key => $value) {
+            $dateRange[] = $value;
+        }
+        for ($i = 0; $i < count($dateRange); $i ++) {
+            $tempLog = new Log();
+            $tempLog->setServiceName('INVOICE-SERVICE');
+            $tempLog->setLogDate($dateRange[$i]);
+            $tempLog->setHttpMethod('GET');
+            $tempLog->setEndPoint('/invoices');
+            $tempLog->setHttpProtocol('HTTP/1.1');
+            $tempLog->setStatusCode(400);
+            $this->entityManager->persist($tempLog);
+        }
+        $this->entityManager->flush();
+
+        $count = $this->logsService->getLogsCount(
+            'INVOICE-SERVICE',
+            $startDate,
+            $endDate,
+            400
+        );
+        $this->assertEquals(50,$count);
+    }
+
+    /** @test
+     * @throws \Doctrine\ORM\Exception\ORMException
+     */
+    public function testToCountNumberOfRecordForUserServiceForStatusCode()
+    {
+        $startDate = new DateTime('2010-10-01');
+        $endDate = new DateTime('2010-11-21');
+        $dateInterval = new DateInterval('P1D');
+
+        $period = new DatePeriod($startDate, $dateInterval, $endDate);
+        $dateRange = [];
+        foreach ($period as $key => $value) {
+            $dateRange[] = $value;
+        }
+        for ($i = 0; $i < count($dateRange); $i ++) {
+            $tempLog = new Log();
+            $tempLog->setServiceName('USER-SERVICE');
+            $tempLog->setLogDate($dateRange[$i]);
+            $tempLog->setHttpMethod('GET');
+            $tempLog->setEndPoint('/invoices');
+            $tempLog->setHttpProtocol('HTTP/1.1');
+            $tempLog->setStatusCode(201);
+            $this->entityManager->persist($tempLog);
+        }
+        $this->entityManager->flush();
+
+        $count = $this->logsService->getLogsCount(
+            'USER-SERVICE',
+            null,
+            null,
+            201
+        );
+        $this->assertEquals(51,$count);
     }
 }

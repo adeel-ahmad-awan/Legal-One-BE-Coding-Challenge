@@ -3,7 +3,10 @@
 namespace App\Controller;
 
 use App\Service\LogsService;
+use DateInterval;
+use DatePeriod;
 use DateTime;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,8 +36,9 @@ class LogsController extends AbstractController
             if (intval($tempStatusCode) ==  $tempStatusCode){
                 $statusCode = $tempStatusCode;
             } else {
-                throw new \Exception('Invalid Format for status code');
+                throw new Exception('Invalid Format for status code');
             }
+
             $count = $this->logsService->getLogsCount(
                 $serviceNames,
                 $startDate,
@@ -47,7 +51,7 @@ class LogsController extends AbstractController
                 'count' => $count,
             ], 200);
 
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             //        responses: "400": bad input parameter
             return $this->json([
                 'error' => $exception->getMessage(),

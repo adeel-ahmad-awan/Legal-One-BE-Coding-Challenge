@@ -11,16 +11,19 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class fetchLogsCommandTest extends KernelTestCase
+/**
+ * @class FetchLogsCommandTest
+ */
+class FetchLogsCommandTest extends KernelTestCase
 {
-    /**
-     * @var EntityManager
-     */
+    /**  @var EntityManager $entityManager */
     private $entityManager;
 
+    /** @var LogsService $logsService */
     private $logsService;
 
     /**
+     * @test
      * @throws \Exception
      */
     protected function setUp(): void
@@ -32,8 +35,7 @@ class fetchLogsCommandTest extends KernelTestCase
         $purger->purge();
     }
 
-    /**
-     */
+    /** @test */
     public function fetchLogsCommandSavesData()
     {
         $application = new Application(self::$kernel);
@@ -56,17 +58,4 @@ class fetchLogsCommandTest extends KernelTestCase
         // testing
         $this->assertEquals(1280,$logsCount);
     }
-
-//    public function fetchLogsCommandFileNotFound()
-//    {
-//        /**
-//         * @expectException
-//         */
-//        $application = new Application(self::$kernel);
-//        $command = $application->find('app:fetch-logs');
-//        $commandTester = new CommandTester($command);
-//        $commandTester->execute([
-//            'filePath' => 'tests/feature/logs2.txt'
-//        ]);
-//    }
 }

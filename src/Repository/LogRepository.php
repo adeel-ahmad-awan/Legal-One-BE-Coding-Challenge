@@ -114,7 +114,7 @@ class LogRepository extends ServiceEntityRepository
         $startDate,
         $endDate,
         $statusCode
-    ) {
+    ): mixed {
         $qb = $this->createQueryBuilder('a')->select('count(a.id)');
 
         // check for serviceNames
